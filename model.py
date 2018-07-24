@@ -1,20 +1,18 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 import tensorflow as tf
-# import numpy as np
-# import gensim
+import numpy as np
 
 
 class CRAN:
 
 
-    def __init__(self, embedding_matrix, filter_size=3,
+    def __init__(self, embedding_model, filter_size=3,
                  num_filters=100, hidden_size=100, num_classes=6, learning_rate=0.001,
                  use_bn=False, dropout_prob=None, class_weights=None):
 
-        self.embedding_matrix = embedding_matrix
-        # self.use_pretrained = use_pretrained
-        self.embedding_dim = embedding_matrix.shape[1]
+        self.embedding_model = embedding_model
+        self.embedding_dim = embedding_model.vectors.shape[1]
 
         self.filter_size = filter_size
         self.num_filters = num_filters
@@ -29,9 +27,6 @@ class CRAN:
         self.y = tf.placeholder(tf.float32, [None, num_classes], name="label")
         self.training = tf.placeholder_with_default(False, shape=(), name='is_training')
 
-        # self.valid_pred = tf.placeholder(tf.float32, [None, None], name="valid_pred")
-        # self.valid_label = tf.placeholder(tf.float32, [None, None], name="valid_label")
-
         self.global_step = tf.Variable(0, trainable=False, name="global_step")
         self.learning_rate = learning_rate
 
@@ -39,16 +34,22 @@ class CRAN:
         self.train_op = None
         self.predict_proba = None
         self.auc = None
-
-        # self.valid_auc = None
+        self.attention = None
 
         self._build_graph()
 
     def _word_embedding(self, inputs):
         with tf.name_scope("word_embedding"):
+            initializer = tf.constant_initializer(
+                np.vstack([np.zeros(self.embedding_dim),
+                           self.embedding_model.vectors,
+                           np.random.uniform(-6, 6, size=self.embedding_dim)])
+            )
+
             embedding_W = tf.get_variable("embedding_W",
-                                          shape=[self.embedding_matrix.shape[0], self.embedding_matrix.shape[1]],
-                                          initializer= tf.constant_initializer(self.embedding_matrix),
+                                          shape=[self.embedding_model.vectors.shape[0] + 2,
+                                                 self.embedding_model.vectors.shape[1]],
+                                          initializer= initializer,
                                           trainable=True)
             embedded_X = tf.nn.embedding_lookup(embedding_W, inputs)
 
@@ -81,6 +82,7 @@ class CRAN:
                 b = tf.get_variable("cnn_bias",
                                     shape=[self.num_filters],
                                     initializer=tf.constant_initializer(0.0))
+
                 conv_output = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
 
             attention_signal = tf.reduce_mean(tf.transpose(tf.squeeze(conv_output), perm=[0, 2, 1]),
@@ -127,7 +129,8 @@ class CRAN:
                 loss = tf.reduce_mean(weighted_loss)
             else:
                 loss = tf.losses.sigmoid_cross_entropy(targets, inputs)
-                tf.summary.scalar("loss", loss)
+
+            tf.summary.scalar("loss", loss)
 
         with tf.name_scope("train"):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -141,9 +144,6 @@ class CRAN:
             auc = tf.metrics.auc(targets, predict_proba, name="train_auc")
             tf.summary.scalar("AUC", auc[1])
 
-        # with tf.name_scope("validation_AUC"):
-        #     valid_auc = tf.metrics.auc(self.valid_label, self.valid_pred, name="valid_auc")
-
         return loss, train_op, predict_proba, auc
 
     def _build_graph(self):
@@ -152,9 +152,6 @@ class CRAN:
         hiddens = self._lstm_encoder(embedded_X)
         logits = self._classification(attention_signal, hiddens)
 
-        for var in tf.trainable_variables():
-            tf.summary.histogram(var.op.name, var)
-
         self.loss, self.train_op, self.predict_proba, self.auc = self._optimization(logits, self.y)
 
         return logits
@@ -162,9 +159,6 @@ class CRAN:
     def train(self, session, X, y):
         merged = tf.summary.merge_all()
         return session.run([self.train_op, self.loss, merged], feed_dict={self.X: X, self.y: y, self.training: True})
-
-    # def validation(self, session, target, predict):
-    #     return session.run(self.valid_auc, feed_dict={self.valid_label: target, self.valid_pred: predict})
 
     def predict(self, session, X):
         return session.run(self.predict_proba, feed_dict={self.X: X, self.training: False})
