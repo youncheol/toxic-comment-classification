@@ -5,8 +5,6 @@ import numpy as np
 
 
 class CRAN:
-
-
     def __init__(self, embedding_model, filter_size=3,
                  num_filters=100, hidden_size=100, num_classes=6, learning_rate=0.001,
                  use_bn=False, dropout_prob=None, class_weights=None):
@@ -34,7 +32,6 @@ class CRAN:
         self.train_op = None
         self.predict_proba = None
         self.auc = None
-        self.attention = None
 
         self._build_graph()
 
@@ -59,7 +56,14 @@ class CRAN:
         with tf.name_scope("attention_extraction"):
             seq_length = tf.shape(inputs)[1]
             input_reshaped = tf.reshape(inputs, [-1, seq_length, self.embedding_dim, 1])
-            paddings = tf.constant([[0, 0], [1, 1], [0, 0], [0, 0]], dtype="int32")
+
+            if self.filter_size % 2 == 0:
+                after = self.filter_size // 2
+                before = after - 1
+            else:
+                before = after = self.filter_size // 2
+
+            paddings = tf.constant([[0, 0], [before, after], [0, 0], [0, 0]], dtype="int32")
             input_padded = tf.pad(input_reshaped, paddings, "CONSTANT")
 
             filter_shape = [self.filter_size, self.embedding_dim, 1, self.num_filters]
@@ -141,7 +145,7 @@ class CRAN:
             predict_proba = tf.nn.sigmoid(inputs)
 
         with tf.name_scope("AUC"):
-            auc = tf.metrics.auc(targets, predict_proba, name="train_auc")
+            auc = tf.metrics.auc(targets, predict_proba, name="AUC")
             tf.summary.scalar("AUC", auc[1])
 
         return loss, train_op, predict_proba, auc
@@ -162,6 +166,3 @@ class CRAN:
 
     def predict(self, session, X):
         return session.run(self.predict_proba, feed_dict={self.X: X, self.training: False})
-
-
-

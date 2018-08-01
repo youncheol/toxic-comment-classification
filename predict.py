@@ -1,22 +1,21 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 import tensorflow as tf
-# import numpy as np
-# import pandas as pd
-# import gensim
+import numpy as np
+import gensim
 import argparse
-from data_processor import TFRecord, load_embedding_matrix, make_submission
+from data_processor import TFRecord, make_submission
 from model import CRAN
 
 
-def predict(embedding_model_fname, model_fname, data_fname, sample_fname, sub_fname):
-    embedding_matrix = load_embedding_matrix(embedding_model_fname)
+def predict(glove_fname, model_fname, data_fname, proba=True):
+    glove_model = gensim.models.KeyedVectors.load(glove_fname)
 
-    with tf.device("/cpu:0"):
-        model = CRAN(embedding_matrix, use_bn=True)
+    with tf.device("/gpu:0"):
+        model = CRAN(glove_model, use_bn=False, dropout_prob=0.5)
 
         tfrecord = TFRecord()
-        tfrecord.make_iterator(data_fname, training=False, batch_size=160000)
+        tfrecord.make_iterator(data_fname, len(glove_model.vocab) + 1, training=False)
 
     saver = tf.train.Saver(tf.global_variables())
 
@@ -25,27 +24,35 @@ def predict(embedding_model_fname, model_fname, data_fname, sample_fname, sub_fn
 
         sess.run(tfrecord.init_op)
 
+        comment = tfrecord.load(sess, training=False)
+        predict = model.predict(sess, comment)
+
         while True:
             try:
                 comment = tfrecord.load(sess, training=False)
-                predict = model.predict(sess, comment)
+                predict = np.vstack([predict, model.predict(sess, comment)])
 
             except tf.errors.OutOfRangeError:
                 break
 
-    make_submission(predict, sample_fname, sub_fname)
+        if not proba:
+            predict = np.vectorize(lambda x: 1 if x > 0.5 else 0)(predict)
+
+    return predict
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--embedding_model_fname", required=True)
+    parser.add_argument("--glove_fname", required=True)
     parser.add_argument("--model_fname", required=True)
     parser.add_argument("--data_fname", required=True)
     parser.add_argument("--sample_fname", required=True)
     parser.add_argument("--sub_fname", required=True)
     args = parser.parse_args()
 
-    predict(args.embedding_model_fname, args.model_fname, args.data_fname, args.sample_fname, args.sub_fname)
+    pred = predict(args.glove_fname, args.model_fname, args.data_fname, proba=True)
+
+    make_submission(pred, args.sample_fname, args.sub_fname)
 
 
 if __name__ == "__main__":
