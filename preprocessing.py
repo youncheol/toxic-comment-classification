@@ -5,7 +5,7 @@ from data_processor import PreProcessing, TFRecord
 import argparse
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", action="store_true")
     parser.add_argument("--data_fname", required=True)
@@ -19,6 +19,8 @@ def main():
     prep = PreProcessing()
     tfrecord = TFRecord()
 
+    prep.load_save("./datafiles/tokenized_train.pkl", mode="load")
+
     prep.processing(df, args.glove_fname, args.max_length)
 
     if args.train:
@@ -27,6 +29,3 @@ def main():
 
     else:
         tfrecord.save(args.tfr_fname, prep.indexed_data, training=False)
-
-if __name__ == "__main__":
-    main()

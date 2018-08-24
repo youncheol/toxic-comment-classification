@@ -8,14 +8,16 @@ from data_processor import TFRecord, make_submission
 from model import CRAN
 
 
-def predict(glove_fname, model_fname, data_fname, proba=True):
+def predict(glove_fname, model_fname, tfr_fname, filter_size, num_filters, hidden_size,
+            learning_rate, dropout_prob, proba=True):
     glove_model = gensim.models.KeyedVectors.load(glove_fname)
 
     with tf.device("/gpu:0"):
-        model = CRAN(glove_model, use_bn=False, dropout_prob=0.5)
+        model = CRAN(glove_model, filter_size=filter_size, num_filters=num_filters, hidden_size=hidden_size,
+                     learning_rate=learning_rate, dropout_prob=dropout_prob)
 
         tfrecord = TFRecord()
-        tfrecord.make_iterator(data_fname, len(glove_model.vocab) + 1, training=False)
+        tfrecord.make_iterator(tfr_fname, len(glove_model.vocab) + 1, training=False)
 
     saver = tf.train.Saver(tf.global_variables())
 
@@ -41,20 +43,22 @@ def predict(glove_fname, model_fname, data_fname, proba=True):
     return predict
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--glove_fname", required=True)
     parser.add_argument("--model_fname", required=True)
-    parser.add_argument("--data_fname", required=True)
+    parser.add_argument("--tfr_fname", required=True)
     parser.add_argument("--sample_fname", required=True)
     parser.add_argument("--sub_fname", required=True)
+    parser.add_argument("--filter_size", type=int, default=3)
+    parser.add_argument("--num_filters", type=int, default=100)
+    parser.add_argument("--hidden_size", type=int, default=100)
+    parser.add_argument("--learning_rate", type=float, default=0.001)
+    parser.add_argument("--dropout_prob", type=float, default=0.5)
     args = parser.parse_args()
 
-    pred = predict(args.glove_fname, args.model_fname, args.data_fname, proba=True)
+    pred = predict(args.glove_fname, args.model_fname, args.tfr_fname, args.filter_size, args.num_filters,
+                   args.hidden_size, args.learning_rate, args.dropout_prob, proba=True)
 
     make_submission(pred, args.sample_fname, args.sub_fname)
-
-
-if __name__ == "__main__":
-    main()
 

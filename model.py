@@ -5,9 +5,8 @@ import numpy as np
 
 
 class CRAN:
-    def __init__(self, embedding_model, filter_size=3,
-                 num_filters=100, hidden_size=100, num_classes=6, learning_rate=0.001,
-                 use_bn=False, dropout_prob=None, class_weights=None):
+    def __init__(self, embedding_model, filter_size=3, num_filters=100,
+                 hidden_size=100, learning_rate=0.001, dropout_prob=0.5):
 
         self.embedding_model = embedding_model
         self.embedding_dim = embedding_model.vectors.shape[1]
@@ -15,14 +14,13 @@ class CRAN:
         self.filter_size = filter_size
         self.num_filters = num_filters
         self.hidden_size = hidden_size
-        self.num_classes = num_classes
+        self.num_classes = 6
 
-        self.use_bn = use_bn
         self.dropout_prob = dropout_prob
-        self.class_weights = class_weights
+        self.class_weights = [1, 10, 1, 30, 2, 10]
 
         self.X = tf.placeholder(tf.int64, [None, None], name="comment")
-        self.y = tf.placeholder(tf.float32, [None, num_classes], name="label")
+        self.y = tf.placeholder(tf.float32, [None, self.num_classes], name="label")
         self.training = tf.placeholder_with_default(False, shape=(), name='is_training')
 
         self.global_step = tf.Variable(0, trainable=False, name="global_step")
@@ -48,6 +46,7 @@ class CRAN:
                                                  self.embedding_model.vectors.shape[1]],
                                           initializer= initializer,
                                           trainable=True)
+
             embedded_X = tf.nn.embedding_lookup(embedding_W, inputs)
 
         return embedded_X
@@ -78,16 +77,11 @@ class CRAN:
                                 padding="VALID",
                                 name="convolution")
 
-            if self.use_bn:
-                bn_conv = tf.layers.batch_normalization(conv, momentum=0.9, training=training)
-                conv_output = tf.nn.relu(bn_conv, name='relu')
+            b = tf.get_variable("cnn_bias",
+                                shape=[self.num_filters],
+                                initializer=tf.constant_initializer(0.0))
 
-            else:
-                b = tf.get_variable("cnn_bias",
-                                    shape=[self.num_filters],
-                                    initializer=tf.constant_initializer(0.0))
-
-                conv_output = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+            conv_output = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
 
             attention_signal = tf.reduce_mean(tf.transpose(tf.squeeze(conv_output), perm=[0, 2, 1]),
                                               axis=1,
@@ -100,12 +94,14 @@ class CRAN:
             sign = tf.sign(tf.reduce_max(tf.abs(inputs), axis=2))
             length = tf.cast(tf.reduce_sum(sign, axis=1), tf.int32)
 
-            lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(self.hidden_size, name="lstm_cell")
+            cell = tf.nn.rnn_cell.GRUCell(self.hidden_size, name="gru_cell")
 
-            if self.dropout_prob:
-                lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=self.dropout_prob)
+            if self.training == False:
+                self.dropout_prob = 1
 
-            hiddens, _ = tf.nn.dynamic_rnn(lstm_cell, inputs, sequence_length=length, dtype=tf.float32)
+            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob=self.dropout_prob)
+
+            hiddens, _ = tf.nn.dynamic_rnn(cell, inputs, sequence_length=length, dtype=tf.float32)
 
         return hiddens
 
@@ -137,9 +133,7 @@ class CRAN:
             tf.summary.scalar("loss", loss)
 
         with tf.name_scope("train"):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            with tf.control_dependencies(update_ops):
-                train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(loss, global_step=self.global_step)
+            train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(loss, global_step=self.global_step)
 
         with tf.name_scope("predict"):
             predict_proba = tf.nn.sigmoid(inputs)
@@ -158,11 +152,10 @@ class CRAN:
 
         self.loss, self.train_op, self.predict_proba, self.auc = self._optimization(logits, self.y)
 
-        return logits
-
     def train(self, session, X, y):
         merged = tf.summary.merge_all()
         return session.run([self.train_op, self.loss, merged], feed_dict={self.X: X, self.y: y, self.training: True})
 
     def predict(self, session, X):
         return session.run(self.predict_proba, feed_dict={self.X: X, self.training: False})
+

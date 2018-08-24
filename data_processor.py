@@ -1,6 +1,5 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-import pickle
 import pandas as pd
 import tensorflow as tf
 import gensim
@@ -127,8 +126,14 @@ class TFRecord:
 
         if training:
             for comment, label in tqdm(zip(comments, labels), total=len(labels), desc="Writing TFRecord"):
-                example = self._make_example(comment=comment, label=label, training=training)
-                writer.write(example.SerializeToString())
+                over_sample = 1
+
+                if label.sum() >=1:
+                    over_sample = 2
+
+                for _ in range(over_sample):
+                    example = self._make_example(comment=comment, label=label, training=training)
+                    writer.write(example.SerializeToString())
         else:
             for comment in tqdm(comments, desc="Writing TFRecord"):
                 example = self._make_example(comment=comment, training=training)
