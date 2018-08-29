@@ -2,13 +2,13 @@
 
 [*Identify and classify toxic online comments*](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)
 
-wikipedia talk의 코멘트 데이터에서 악성 코멘트를 골라내고, 그것들이 6가지 악성요소(`toxic`, `severe_toxic`, `threats`, `obscene`, `insult`, `identity_hate`) 중 어떤 특성을 띄는지 분류하는 문제입니다. (multi-label 문제)
+wikipedia talk의 코멘트 데이터에서 악성 코멘트를 골라내고, 그것들이 6가지 악성요소(`toxic`, `severe_toxic`, `threats`, `obscene`, `insult`, `identity_hate`) 중 어떤 특성을 띄는지 분류 (multi-label 문제)
 
 
 
 ## Requirements
 
-모델 학습을 위해서 먼저 미리 학습된 [GloVe](https://nlp.stanford.edu/projects/glove) 벡터를 gensim에서 사용가능한 포맷으로 변경해줘야 합니다. 
+모델 학습을 위해 미리 학습된 [GloVe](https://nlp.stanford.edu/projects/glove) 벡터를 gensim에서 사용가능한 포맷으로 변경
 
 Example:
 
@@ -20,9 +20,9 @@ $ python convert_glove_format.py --source_fname "/your_path/glove.twitter.27B.10
 
 ## Model
 
-* [A Convolutional Attention Model for Text Classification](http://tcci.ccf.org.cn/conference/2017/papers/1057.pdf) 모델을 텐서플로우로 구현했습니다.
+* [A Convolutional Attention Model for Text Classification](http://tcci.ccf.org.cn/conference/2017/papers/1057.pdf) 모델을 텐서플로우로 구현
 
-* LSTM cell을 GRU cell로 교체하고 Loss function을 multi-label 문제에 적합하게 변경했습니다.
+* LSTM cell을 GRU cell로 교체하고 loss function을 sigmoid cross entropy로 변경
 
 
 
