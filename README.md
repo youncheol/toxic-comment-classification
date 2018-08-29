@@ -1,26 +1,69 @@
 # Toxic Comment Classification
 
+[*Identify and classify toxic online comments*](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)
+
+wikipedia talk의 코멘트 데이터에서 악성 코멘트를 골라내고, 그것들이 6가지 악성요소(`toxic`, `severe_toxic`, `threats`, `obscene`, `insult`, `identity_hate`) 중 어떤 특성을 띄는지 분류하는 문제입니다. (multi-label 문제)
+
+
+
 ## Requirements
 
 모델 학습을 위해서 먼저 미리 학습된 [GloVe](https://nlp.stanford.edu/projects/glove) 벡터를 gensim에서 사용가능한 포맷으로 변경해줘야 합니다. 
 
-실행 예:
+Example:
 
 ```
-$ python convert_glove_format.py --source_fname "/yourpath/glove.twitter.27B.100d.txt" --target_fname "glove"
+$ python convert_glove_format.py --source_fname "/your_path/glove.twitter.27B.100d.txt"
+```
+
+
+
+## Model
+
+* [A Convolutional Attention Model for Text Classification](http://tcci.ccf.org.cn/conference/2017/papers/1057.pdf) 모델을 텐서플로우로 구현했습니다.
+
+* LSTM cell을 GRU cell로 교체하고 Loss function을 multi-label 문제에 적합하게 변경했습니다.
+
+
+
+## Preprocessing
+
+Example:
+
+```
+$ python preprocessing.py --dafa_fname "train.csv"
+```
+
+Optional arguments:
+
+```
+$ python preprocessing.py -h
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data_fname DATA_FNAME
+                        file name of data to processing
+  --tfr_fname TFR_FNAME
+                        file name of TFRecord to be created (default: train.tfrecord)
+  --glove_fname GLOVE_FNAME
+                        file name of pre-trained GloVe embedding model
+                        (default: glove.model)
+  --max_length MAX_LENGTH
+                        threshold length to truncate comments (default: 300)
+  --train               use training data (default: False)
 ```
 
 
 
 ## Train
 
-실행 예:
+Example:
 
 ```
-$ python train.py --glove_fname "glove.model" --tfr_fname "train.tfrecord" --num_epochs 5 --logdir "log_path" --save_fname "model_name"
+$ python train.py
 ```
 
-optional parameters:
+Optional arguments:
 
 ```
 $ python train.py -h
@@ -29,13 +72,14 @@ optional arguments:
   -h, --help            show this help message and exit
   --glove_fname GLOVE_FNAME
                         file name of pre-trained GloVe embedding model
+                        (default: glove.model)
   --tfr_fname TFR_FNAME
-                        file name of TFRecord to train
+                        file name of TFRecord to train (default: train.tfrecord)
   --num_epochs NUM_EPOCHS
-                        number of training epochs
-  --logdir LOGDIR       directory name where to write log files
+                        number of training epochs (default: 5)
+  --logdir LOGDIR       directory name where to write log files (default: logs)
   --save_fname SAVE_FNAME
-                        prefix of model to be saved
+                        prefix of model to be saved (default: model
   --batch_size BATCH_SIZE
                         batch size to load data (default: 64)
   --filter_size FILTER_SIZE
@@ -56,21 +100,31 @@ optional arguments:
 
 ## Predict
 
+Example:
+
 ```
-python predict.py -h
+$ python predict.py --model_fname "your_model"
+```
+
+Optional arguments:
+
+```
+$ python predict.py -h
 
 optional arguments:
   -h, --help            show this help message and exit
-  --glove_fname GLOVE_FNAME
-                        file name of pre-trained GloVe embedding model
   --model_fname MODEL_FNAME
                         file name of model to restore
+  --glove_fname GLOVE_FNAME
+                        file name of pre-trained GloVe embedding model
+                        (default: glove.model)
   --tfr_fname TFR_FNAME
-                        file name of TFRecord to predict
+                        file name of TFRecord to predict (default: test.tfrecord)
   --sample_fname SAMPLE_FNAME
-                        file name of kaggle sample submission
+                        file name of kaggle sample submission (default:
+                        sample_submission.csv)
   --output_fname OUTPUT_FNAME
-                        file name of submission to be created
+                        file name of submission to be created (default: submission.csv)
   --batch_size BATCH_SIZE
                         batch size to load data (default: 64)
   --filter_size FILTER_SIZE
@@ -86,3 +140,8 @@ optional arguments:
   --proba               predict probabilities (default: False)
 ```
 
+
+
+## Result
+
+* AUC score: 0.9813
