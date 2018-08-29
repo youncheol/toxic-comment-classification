@@ -14,16 +14,16 @@ from model import CRAN
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--glove_fname", required=True,
-                        help="file name of pre-trained GloVe embedding model")
-    parser.add_argument("--tfr_fname", required=True,
-                        help="file name of TFRecord to train")
-    parser.add_argument("--num_epochs", type=int, required=True,
-                        help="number of training epochs")
-    parser.add_argument("--logdir", required=True,
-                        help="directory name where to write log files")
-    parser.add_argument("--save_fname", required=True,
-                        help="prefix of model to be saved")
+    parser.add_argument("--glove_fname", default="glove.model",
+                        help="file name of pre-trained GloVe embedding model (default: glove.model)")
+    parser.add_argument("--tfr_fname", default="train.tfrecord",
+                        help="file name of TFRecord to train (default: train.tfrecord)")
+    parser.add_argument("--num_epochs", default=5, type=int,
+                        help="number of training epochs (default: 5)")
+    parser.add_argument("--logdir", default="logs",
+                        help="directory name where to write log files (default: logs)")
+    parser.add_argument("--save_fname", default="model",
+                        help="prefix of model to be saved (default: model")
     parser.add_argument("--batch_size", type=int, default=64,
                         help="batch size to load data (default: 64)")
     parser.add_argument("--filter_size", type=int, default=3,

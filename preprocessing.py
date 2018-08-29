@@ -9,12 +9,12 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_fname", required=True,
                         help="file name of data to processing")
-    parser.add_argument("--tfr_fname", required=True,
-                        help="file name of TFRecord to be created")
-    parser.add_argument("--glove_fname", required=True,
-                        help="file name of pre-trained GloVe embedding model")
-    parser.add_argument("--max_length", type=int,
-                        help="threshold length to truncate comments")
+    parser.add_argument("--tfr_fname", default="train.tfrecord",
+                        help="file name of TFRecord to be created (default: train.tfrecord)")
+    parser.add_argument("--glove_fname", default="glove.model",
+                        help="file name of pre-trained GloVe embedding model (default: glove.model)")
+    parser.add_argument("--max_length", default=300, type=int,
+                        help="threshold length to truncate comments (default: 300)")
     parser.add_argument("--train", default=False, action="store_true",
                         help="use training data (default: False)")
 

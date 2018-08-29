@@ -15,16 +15,16 @@ from model import CRAN
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--glove_fname", required=True,
-                        help="file name of pre-trained GloVe embedding model")
     parser.add_argument("--model_fname", required=True,
                         help="file name of model to restore")
-    parser.add_argument("--tfr_fname", required=True,
-                        help="file name of TFRecord to predict")
-    parser.add_argument("--sample_fname", required=True,
-                        help="file name of kaggle sample submission")
-    parser.add_argument("--output_fname", required=True,
-                        help="file name of submission to be created")
+    parser.add_argument("--glove_fname", default="glove.model",
+                        help="file name of pre-trained GloVe embedding model (default: glove.model)")
+    parser.add_argument("--tfr_fname", default="test.tfrecord",
+                        help="file name of TFRecord to predict (default: test.tfrecord)")
+    parser.add_argument("--sample_fname", default="sample_submission.csv",
+                        help="file name of kaggle sample submission (default: sample_submission.csv)")
+    parser.add_argument("--output_fname", default="submission.csv",
+                        help="file name of submission to be created (default: submission.csv)")
     parser.add_argument("--batch_size", type=int, default=64,
                         help="batch size to load data (default: 64)")
     parser.add_argument("--filter_size", type=int, default=3,

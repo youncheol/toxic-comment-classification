@@ -7,7 +7,7 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source_fname", required=True, help="file name of GloVe format vectors")
-    parser.add_argument("--target_fname", required=True, help="output file name")
+    parser.add_argument("--target_fname", default="glove.model", help="output file name (default: glove.model)")
 
     return parser.parse_args()
 
