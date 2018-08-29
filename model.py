@@ -6,7 +6,7 @@ import numpy as np
 
 class CRAN:
     def __init__(self, embedding_model, filter_size=3, num_filters=100,
-                 hidden_size=100, learning_rate=0.001, dropout_prob=0.5):
+                 hidden_size=100, learning_rate=0.001, dropout_prob=0.5, class_weight=None):
 
         self.embedding_model = embedding_model
         self.embedding_dim = embedding_model.vectors.shape[1]
@@ -17,7 +17,7 @@ class CRAN:
         self.num_classes = 6
 
         self.dropout_prob = dropout_prob
-        self.class_weights = [1, 10, 1, 30, 2, 10]
+        self.class_weights = class_weight
 
         self.X = tf.placeholder(tf.int64, [None, None], name="comment")
         self.y = tf.placeholder(tf.float32, [None, self.num_classes], name="label")
@@ -30,6 +30,7 @@ class CRAN:
         self.train_op = None
         self.predict_proba = None
         self.auc = None
+        self.merged = None
 
         self._build_graph()
 
@@ -123,7 +124,7 @@ class CRAN:
 
     def _optimization(self, inputs, targets):
         with tf.name_scope("loss"):
-            if self.class_weights:
+            if self.class_weights is not None:
                 weights = tf.constant(self.class_weights, dtype=tf.float32)
                 weighted_loss = tf.nn.weighted_cross_entropy_with_logits(targets, inputs, pos_weight=weights)
                 loss = tf.reduce_mean(weighted_loss)
@@ -142,6 +143,8 @@ class CRAN:
             auc = tf.metrics.auc(targets, predict_proba, name="AUC")
             tf.summary.scalar("AUC", auc[1])
 
+        self.merged = tf.summary.merge_all()
+
         return loss, train_op, predict_proba, auc
 
     def _build_graph(self):
@@ -153,9 +156,7 @@ class CRAN:
         self.loss, self.train_op, self.predict_proba, self.auc = self._optimization(logits, self.y)
 
     def train(self, session, X, y):
-        merged = tf.summary.merge_all()
-        return session.run([self.train_op, self.loss, merged], feed_dict={self.X: X, self.y: y, self.training: True})
+        return session.run([self.train_op, self.loss, self.merged], feed_dict={self.X: X, self.y: y, self.training: True})
 
     def predict(self, session, X):
         return session.run(self.predict_proba, feed_dict={self.X: X, self.training: False})
-

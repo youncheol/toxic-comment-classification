@@ -1,6 +1,5 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-import pandas as pd
 import tensorflow as tf
 import gensim
 import pickle
@@ -13,7 +12,7 @@ from tqdm import tqdm
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.test.utils import datapath, get_tmpfile
 import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
 
 
 class PreProcessing:
@@ -56,13 +55,13 @@ class PreProcessing:
 
         return comment_list
 
-    def _load_glove(self, glove_fname, glove_savepath):
-        glove_file = datapath(glove_fname)
-        tmp_file = get_tmpfile("glove_model.txt")
-        glove2word2vec(glove_file, tmp_file)
-        glove_model = gensim.models.KeyedVectors.load_word2vec_format(tmp_file)
-        self.model = glove_model
-        glove_model.save(glove_savepath)
+    # def _load_glove(self, glove_fname, glove_savepath):
+    #     glove_file = datapath(glove_fname)
+    #     tmp_file = get_tmpfile("glove_model.txt")
+    #     glove2word2vec(glove_file, tmp_file)
+    #     glove_model = gensim.models.KeyedVectors.load_word2vec_format(tmp_file)
+    #     self.model = glove_model
+    #     glove_model.save(glove_savepath)
 
     def _word2index(self, data, max_length):
         output_list = []
@@ -85,7 +84,6 @@ class PreProcessing:
     def processing(self, data, glove_fname, max_length=100):
         if not self.use_file:
             self.tokenized_data = self._tokenizing(data)
-            # self._load_glove(glove_fname, glove_savepath)
 
         self.model = gensim.models.KeyedVectors.load(glove_fname)
 
@@ -171,7 +169,7 @@ class TFRecord:
 
         return comment
 
-    def make_iterator(self, fname, padding_value, training=True, shuffle_size=100000, batch_size=64):
+    def make_iterator(self, fname, padding_value, training=True, shuffle_size=140000, batch_size=64):
         with tf.name_scope("TFRecord"):
             if training:
                 padded_shapes = (tf.Dimension(None), tf.Dimension(None))
@@ -199,12 +197,3 @@ class TFRecord:
             return session.run([self.comment, self.label])
         else:
             return session.run(self.comment)
-
-
-def make_submission(predict, sample_fname, sub_fname):
-    sample = pd.read_csv(sample_fname)
-    index = sample["id"]
-    columns = sample.columns.tolist()[1:]
-    sub = pd.DataFrame(predict, index=index, columns=columns)
-    sub.to_csv(sub_fname, index=True)
-    print("Submission file is created.")
