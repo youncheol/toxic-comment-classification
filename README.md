@@ -2,7 +2,7 @@
 
 [*Identify and classify toxic online comments*](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)
 
-wikipedia talk의 코멘트 데이터에서 악성 코멘트를 골라내고, 그것들이 6가지 악성요소(`toxic`, `severe_toxic`, `threats`, `obscene`, `insult`, `identity_hate`) 중 어떤 특성을 띄는지 분류 (multi-label 문제)
+In this competition, you’re challenged to build a multi-headed model that’s capable of detecting different types of of toxicity like threats, obscenity, insults, and identity-based hate better than Perspective’s [current models](https://github.com/conversationai/unintended-ml-bias-analysis). You’ll be using a dataset of comments from Wikipedia’s talk page edits.
 
 
 
@@ -21,6 +21,10 @@ $ python convert_glove_format.py --source_fname "/your_path/glove.twitter.27B.10
 ## Model
 
 * [A Convolutional Attention Model for Text Classification](http://tcci.ccf.org.cn/conference/2017/papers/1057.pdf) 모델을 텐서플로우로 구현
+
+  <p align="center">
+  <img src="img/cran.png" width=700px>
+  </p>
 
 * LSTM cell을 GRU cell로 교체하고 loss function을 sigmoid cross entropy로 변경
 
