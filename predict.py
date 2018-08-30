@@ -101,7 +101,7 @@ def main():
             except tf.errors.OutOfRangeError:
                 break
 
-        if not args.proba:
+        if args.proba:
             predict = np.vectorize(lambda x: 1 if x > 0.5 else 0)(predict)
 
     make_submission(predict, args.sample_fname, args.output_fname)
