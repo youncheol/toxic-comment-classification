@@ -55,14 +55,6 @@ class PreProcessing:
 
         return comment_list
 
-    # def _load_glove(self, glove_fname, glove_savepath):
-    #     glove_file = datapath(glove_fname)
-    #     tmp_file = get_tmpfile("glove_model.txt")
-    #     glove2word2vec(glove_file, tmp_file)
-    #     glove_model = gensim.models.KeyedVectors.load_word2vec_format(tmp_file)
-    #     self.model = glove_model
-    #     glove_model.save(glove_savepath)
-
     def _word2index(self, data, max_length):
         output_list = []
         oov_index = len(self.model.vocab) + 1
